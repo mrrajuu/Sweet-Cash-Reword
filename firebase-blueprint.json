@@ -1,0 +1,169 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User account profile and balance ledger state",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique Firebase Authentication UID", "maxLength": 128 },
+        "email": { "type": "string", "description": "User email address", "maxLength": 128 },
+        "displayName": { "type": "string", "description": "User screen name", "maxLength": 100 },
+        "photoURL": { "type": "string", "description": "User avatar image URL", "maxLength": 500 },
+        "balance": { "type": "number", "description": "Available credited USDT balance" },
+        "pendingBalance": { "type": "number", "description": "Pending reward USDT balance" },
+        "totalEarned": { "type": "number", "description": "Lifetime earned USDT" },
+        "referralCode": { "type": "string", "description": "Unique user referral code", "maxLength": 32 },
+        "referredBy": { "type": "string", "description": "Referral code of inviter", "maxLength": 32 },
+        "referralCount": { "type": "number", "description": "Number of users referred" },
+        "dailyStreak": { "type": "number", "description": "Current consecutive daily check-in count" },
+        "lastDailyBonusClaim": { "type": "string", "description": "ISO timestamp of last daily bonus claim", "maxLength": 64 },
+        "role": { "type": "string", "description": "Role level", "enum": ["user", "admin"] },
+        "status": { "type": "string", "description": "Account status", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string", "description": "Account creation timestamp", "maxLength": 64 },
+        "updatedAt": { "type": "string", "description": "Last update timestamp", "maxLength": 64 }
+      },
+      "required": ["uid", "email", "balance", "role", "status", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial ledger entry for all earnings, claims, and payouts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Transaction identifier", "maxLength": 128 },
+        "userId": { "type": "string", "description": "Recipient user UID", "maxLength": 128 },
+        "type": { "type": "string", "description": "Transaction type", "enum": ["daily_bonus", "offer", "survey", "task", "referral", "withdrawal", "adjustment"] },
+        "amount": { "type": "number", "description": "Amount in USDT" },
+        "status": { "type": "string", "description": "Transaction processing state", "enum": ["pending", "completed", "rejected", "reversed"] },
+        "title": { "type": "string", "description": "Short human-readable title", "maxLength": 128 },
+        "description": { "type": "string", "description": "Detailed explanation of payout or charge", "maxLength": 256 },
+        "offerId": { "type": "string", "description": "External or internal offer identifier", "maxLength": 128 },
+        "provider": { "type": "string", "description": "Offerwall or payment provider name", "maxLength": 64 },
+        "network": { "type": "string", "description": "Crypto network", "maxLength": 32 },
+        "walletAddress": { "type": "string", "description": "Crypto wallet address", "maxLength": 128 },
+        "txHash": { "type": "string", "description": "Blockchain payout transaction hash", "maxLength": 128 },
+        "createdAt": { "type": "string", "description": "Transaction creation timestamp", "maxLength": 64 },
+        "updatedAt": { "type": "string", "description": "Transaction last updated timestamp", "maxLength": 64 }
+      },
+      "required": ["userId", "type", "amount", "status", "title", "createdAt"]
+    },
+    "Withdrawal": {
+      "title": "Withdrawal",
+      "description": "User withdrawal request for USDT cryptocurrency payout",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Withdrawal request identifier", "maxLength": 128 },
+        "userId": { "type": "string", "description": "User UID who requested withdrawal", "maxLength": 128 },
+        "userEmail": { "type": "string", "description": "User contact email", "maxLength": 128 },
+        "amount": { "type": "number", "description": "Requested gross amount in USDT" },
+        "fee": { "type": "number", "description": "Network fee in USDT" },
+        "netAmount": { "type": "number", "description": "Net payable amount in USDT" },
+        "cryptoCurrency": { "type": "string", "description": "Crypto asset symbol", "enum": ["USDT"] },
+        "network": { "type": "string", "description": "Blockchain network", "enum": ["TRC20", "BEP20", "ERC20"] },
+        "walletAddress": { "type": "string", "description": "Destination wallet address", "maxLength": 128 },
+        "status": { "type": "string", "description": "Withdrawal state", "enum": ["pending", "approved", "rejected", "processing"] },
+        "adminNotes": { "type": "string", "description": "Internal admin resolution notes", "maxLength": 256 },
+        "txHash": { "type": "string", "description": "On-chain transaction hash", "maxLength": 128 },
+        "createdAt": { "type": "string", "description": "Submission timestamp", "maxLength": 64 },
+        "updatedAt": { "type": "string", "description": "Resolution timestamp", "maxLength": 64 }
+      },
+      "required": ["userId", "amount", "cryptoCurrency", "network", "walletAddress", "status", "createdAt"]
+    },
+    "Offer": {
+      "title": "Offer",
+      "description": "Available GPT task, survey, or offerwall item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Offer identifier", "maxLength": 128 },
+        "title": { "type": "string", "description": "Offer title", "maxLength": 128 },
+        "description": { "type": "string", "description": "Offer summary", "maxLength": 500 },
+        "category": { "type": "string", "description": "Offer category", "enum": ["survey", "app", "signup", "quiz", "task"] },
+        "rewardAmount": { "type": "number", "description": "Reward in USDT" },
+        "provider": { "type": "string", "description": "Partner offerwall provider", "maxLength": 64 },
+        "requirements": { "type": "string", "description": "Steps required for payout verification", "maxLength": 500 },
+        "difficulty": { "type": "string", "description": "Task difficulty rating", "enum": ["Easy", "Medium", "Hard"] },
+        "timeEstimate": { "type": "string", "description": "Estimated completion duration", "maxLength": 32 },
+        "badge": { "type": "string", "description": "Special highlight tag", "maxLength": 32 },
+        "isFeatured": { "type": "boolean", "description": "Whether featured on top banner" },
+        "status": { "type": "string", "description": "Offer status", "enum": ["active", "paused"] },
+        "externalUrl": { "type": "string", "description": "Offerwall partner tracking link", "maxLength": 500 },
+        "createdAt": { "type": "string", "description": "Creation timestamp", "maxLength": 64 }
+      },
+      "required": ["title", "category", "rewardAmount", "provider", "difficulty", "status"]
+    },
+    "PostbackLog": {
+      "title": "PostbackLog",
+      "description": "Audit trail of incoming partner offerwall postback callbacks",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Log identifier", "maxLength": 128 },
+        "provider": { "type": "string", "description": "Offerwall partner", "maxLength": 64 },
+        "transactionId": { "type": "string", "description": "External partner transaction ID", "maxLength": 128 },
+        "userId": { "type": "string", "description": "Credited user UID", "maxLength": 128 },
+        "payout": { "type": "number", "description": "Postback payout in USDT" },
+        "status": { "type": "string", "description": "Verification outcome", "enum": ["success", "duplicate", "invalid_signature", "reversed", "user_not_found"] },
+        "ip": { "type": "string", "description": "Originating IP address", "maxLength": 64 },
+        "payload": { "type": "string", "description": "Raw postback payload serialized", "maxLength": 2048 },
+        "createdAt": { "type": "string", "description": "Event timestamp", "maxLength": 64 }
+      },
+      "required": ["provider", "transactionId", "userId", "payout", "status", "createdAt"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global platform configurations and rates",
+      "type": "object",
+      "properties": {
+        "minWithdrawalUsdt": { "type": "number", "description": "Minimum USDT allowed to withdraw" },
+        "withdrawalFeePercent": { "type": "number", "description": "Network fee percentage" },
+        "dailyBonusBase": { "type": "number", "description": "Base daily claim reward in USDT" },
+        "dailyBonusStreakStep": { "type": "number", "description": "Additional daily reward per consecutive day streak" },
+        "referralBonusPercent": { "type": "number", "description": "Commission percentage on referral earnings" },
+        "maintenanceMode": { "type": "boolean", "description": "Flag to toggle platform maintenance" },
+        "postbackSecretKey": { "type": "string", "description": "Secret key for partner HMAC signatures", "maxLength": 128 },
+        "updatedAt": { "type": "string", "description": "Settings last updated timestamp", "maxLength": 64 }
+      },
+      "required": ["minWithdrawalUsdt", "dailyBonusBase", "referralBonusPercent"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "System administrator authorization record",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Admin UID", "maxLength": 128 },
+        "email": { "type": "string", "description": "Admin email address", "maxLength": 128 },
+        "role": { "type": "string", "description": "Admin privileges level", "enum": ["super_admin", "admin"] },
+        "createdAt": { "type": "string", "description": "Added timestamp", "maxLength": 64 }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores user balance, streak, referral stats, and profile"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Stores financial transactions for credits, claims, and debits"
+    },
+    "/withdrawals/{withdrawalId}": {
+      "schema": "Withdrawal",
+      "description": "Stores USDT payout requests and admin approval workflow"
+    },
+    "/offers/{offerId}": {
+      "schema": "Offer",
+      "description": "Stores GPT offers, surveys, and tasks available to users"
+    },
+    "/postback_logs/{logId}": {
+      "schema": "PostbackLog",
+      "description": "Audit records of server-side offerwall postback callbacks"
+    },
+    "/settings/{settingId}": {
+      "schema": "Settings",
+      "description": "Platform reward rates, payout limits, and configuration"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Stores system administrator identities for secure RBAC verification"
+    }
+  }
+}

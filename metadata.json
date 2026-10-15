@@ -1,0 +1,6 @@
+{
+  "name": "Sweet Cash Rewards",
+  "description": "Complete Offers. Earn Rewards. A premium GPT earning platform featuring offerwalls, tasks, daily bonuses, referrals, wallet, USDT withdrawals, and secure admin controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

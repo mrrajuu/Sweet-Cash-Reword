@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'mdfarukhossain8573@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      // User can only get their own profile, admins can get any
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      // Admin can list users
+      allow list: if isAdmin();
+
+      // On initial signup, user creates their own profile with 0 balance and user role
+      allow create: if isOwner(userId) &&
+        incoming().uid == userId &&
+        incoming().role == 'user' &&
+        incoming().balance == 0 &&
+        incoming().pendingBalance == 0 &&
+        incoming().totalEarned == 0 &&
+        incoming().status == 'active' &&
+        incoming().keys().hasAll(['uid', 'email', 'balance', 'role', 'status', 'createdAt']);
+
+      // Regular user can only update safe profile details (displayName, photoURL, updatedAt)
+      // NEVER allow users to change balance, pendingBalance, totalEarned, role, status
+      allow update: if isValidId(userId) && (
+        isAdmin() ||
+        (
+          isOwner(userId) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']) &&
+          incoming().uid == existing().uid &&
+          incoming().email == existing().email &&
+          incoming().role == existing().role &&
+          incoming().status == existing().status &&
+          incoming().balance == existing().balance &&
+          incoming().pendingBalance == existing().pendingBalance &&
+          incoming().totalEarned == existing().totalEarned
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Transactions Collection
+    match /transactions/{txId} {
+      // Users can only read their own transactions. Admins can read all.
+      allow get: if isValidId(txId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+
+      // Transactions are financial ledger records created by server or admin
+      // Client writes are only allowed if admin
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if false; // Transactions are immutable ledger
+    }
+
+    // Withdrawals Collection
+    match /withdrawals/{withdrawalId} {
+      // Users can get their own withdrawal requests, admins can get all
+      allow get: if isValidId(withdrawalId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+
+      // Users can create a withdrawal request in 'pending' status only for themselves
+      allow create: if isValidId(withdrawalId) && isSignedIn() &&
+        incoming().userId == request.auth.uid &&
+        incoming().status == 'pending' &&
+        incoming().amount is number &&
+        incoming().amount >= 1 &&
+        incoming().cryptoCurrency == 'USDT' &&
+        incoming().walletAddress is string &&
+        incoming().walletAddress.size() >= 10 &&
+        incoming().walletAddress.size() <= 128;
+
+      // Only administrators can review, approve, reject or update withdrawals
+      allow update: if isValidId(withdrawalId) && isAdmin();
+      allow delete: if false;
+    }
+
+    // Offers Collection
+    match /offers/{offerId} {
+      // Any authenticated user can read active offers
+      allow get: if isValidId(offerId);
+      allow list: if isSignedIn();
+
+      // Only admins can add or edit offers
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Postback Logs Collection (Audit Trail)
+    match /postback_logs/{logId} {
+      allow get, list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Settings Collection
+    match /settings/{settingId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && (request.auth.uid == adminId || isAdmin());
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
